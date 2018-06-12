@@ -12,7 +12,6 @@ void Computer::capture(std::vector<std::shared_ptr<Pawn>> &pawns,
     if(canCapture(pawns, myPawns, enemyPawns))
     {
         selectPawn(pawns, enemyPawns);
-        canCapture(pawns, myPawns, enemyPawns);
         capture(pawns, enemyPawns);
     }
 }

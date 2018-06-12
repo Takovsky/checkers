@@ -8,7 +8,7 @@ int main()
     sf::RenderWindow window(sf::VideoMode(504, 504), "Checkers");
     Checkers checkers(window);
 
-    GameMode mode = computer;
+    GameMode mode = pvp;
 
     checkers.run(mode);
 
