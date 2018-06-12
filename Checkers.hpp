@@ -61,9 +61,10 @@ class Checkers
     bool isValidFieldWhileCapturingClicked(int x, int y);
     void findLastSelectedField(int x, int y);
     void removeCapturedPawn();
-    void checkIfAnyPawnAtEndOfBoard();
+    bool checkIfAnyPawnAtEndOfBoard();
     void addPointAndRemovePawn(int x, int y, bool isWhite);
     void removeCapturedPawn(sf::Vector2i vec);
+    void removeCapturedPawn(int index);
 
 public:
     Checkers(sf::RenderWindow &window) : window(window), whitePoints(0), blackPoints(0) {}

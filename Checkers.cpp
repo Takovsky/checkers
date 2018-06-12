@@ -88,6 +88,8 @@ void Checkers::play()
             if(event.type == sf::Event::Closed)
                 window.close();
 
+        if(players[activePlayer]->pawns.empty())
+            changeActivePlayer();
         if(isNewMove)
         {
             isNewMove = false;
@@ -98,31 +100,27 @@ void Checkers::play()
         if(!strcmp(typeid(*players[activePlayer]).name(), "8Computer"))
         {
             std::vector<Pawn> pawnsCopy;
-            std::vector<Pawn> capturingPawnsCopy;
-            sf::Vector2i capturedPawn;
             for(auto it = pawns.begin(); it != pawns.end(); it++)
                 pawnsCopy.push_back(*it->get());
-            for(auto it = pawnsWhichCanCapture.begin(); it != pawnsWhichCanCapture.end(); it++)
-                capturingPawnsCopy.push_back(*it->get());
             if(capturing)
-                capturedPawn =
-                players[activePlayer]->capture(pawnsCopy, capturingPawnsCopy, validFieldsIfCanCapture);
+                players[activePlayer]->capture(pawns, players[activePlayer]->pawns,
+                                               players[unactivePlayer]->pawns);
             else
-                players[activePlayer]->move(pawnsCopy);
-            for(int i = 0; i < pawns.size(); i++)
             {
-                if(pawns[i]->getSprite().getPosition() != pawnsCopy[i].getSprite().getPosition())
+                players[activePlayer]->move(pawnsCopy);
+                for(int i = 0; i < pawns.size(); i++)
                 {
-                    findLastSelectedField(pawns[i]->getSprite().getPosition().x,
-                                          pawns[i]->getSprite().getPosition().y);
-                    pawns[i]->getSprite().setPosition(pawnsCopy[i].getSprite().getPosition());
-                    lastSelectedPawn = pawns[i];
-                    selectField(validFields[lastSelectedField]);
-                    selectField(*lastSelectedPawn);
+                    if(pawns[i]->getSprite().getPosition() != pawnsCopy[i].getSprite().getPosition())
+                    {
+                        findLastSelectedField(pawns[i]->getSprite().getPosition().x,
+                                              pawns[i]->getSprite().getPosition().y);
+                        pawns[i]->getSprite().setPosition(pawnsCopy[i].getSprite().getPosition());
+                        lastSelectedPawn = pawns[i];
+                        selectField(validFields[lastSelectedField]);
+                        selectField(*lastSelectedPawn);
+                    }
                 }
             }
-            if(capturing)
-                removeCapturedPawn(capturedPawn);
             changeActivePlayer();
             isNewMove = true;
             capturing = false;
@@ -165,7 +163,7 @@ void Checkers::play()
     }
 }
 
-void Checkers::checkIfAnyPawnAtEndOfBoard()
+bool Checkers::checkIfAnyPawnAtEndOfBoard()
 {
     for(auto it = pawns.begin(); it != pawns.end(); it++)
     {
@@ -173,15 +171,16 @@ void Checkers::checkIfAnyPawnAtEndOfBoard()
         {
             addPointAndRemovePawn(it->get()->getSprite().getPosition().x,
                                   it->get()->getSprite().getPosition().y, true);
-            return;
+            return true;
         }
         else if(!it->get()->isWhite() and it->get()->getSprite().getPosition().y == BOARD_SIZE - OUTBOARD - FIELD_SIZE)
         {
             addPointAndRemovePawn(it->get()->getSprite().getPosition().x,
                                   it->get()->getSprite().getPosition().y, false);
-            return;
+            return true;
         }
     }
+    return false;
 }
 
 void Checkers::addPointAndRemovePawn(int x, int y, bool isWhite)
@@ -209,6 +208,15 @@ void Checkers::addPointAndRemovePawn(int x, int y, bool isWhite)
             pawns.erase(it);
             return;
         }
+}
+
+void Checkers::removeCapturedPawn(int index)
+{
+    sf::Vector2i tmpVec;
+    tmpVec.x = pawns[index]->getSprite().getPosition().x;
+    tmpVec.y = pawns[index]->getSprite().getPosition().y;
+    //    players[unactivePlayer]->popPawn(tmpVec.x, tmpVec.y);
+    removeCapturedPawn(tmpVec);
 }
 
 void Checkers::removeCapturedPawn(sf::Vector2i vec)
@@ -276,6 +284,11 @@ void Checkers::Capture(sf::Event event, bool &capturing, bool &isNewMove)
 
 void Checkers::Capture(sf::Event event, bool &finishedCapturing)
 {
+    if(checkIfAnyPawnAtEndOfBoard() == true)
+    {
+        finishedCapturing = true;
+        return;
+    }
     if(canCapture(*lastSelectedPawn))
     {
         if(isValidFieldWhileCapturingClicked(event.mouseButton.x, event.mouseButton.y))

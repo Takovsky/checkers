@@ -2,74 +2,81 @@
 #include "Board.hpp"
 #include "Tree.hpp"
 
-sf::Vector2i Computer::capture(std::vector<Pawn> &pawns,
-                               std::vector<Pawn> &pawnsWhichCanCapture,
-                               std::vector<sf::Vector2i> &validFieldsIfCanCapture)
+void Computer::capture(std::vector<std::shared_ptr<Pawn>> &pawns,
+                       std::vector<std::shared_ptr<Pawn>> &myPawns,
+                       std::vector<std::shared_ptr<Pawn>> &enemyPawns)
 {
-    int where = 0;
-    int x, y;
-    int index;
-    int i = 0;
-    for(auto it = pawns.begin(); it != pawns.end(); it++, i++)
+    validFieldsIfCanCapture.clear();
+    pawnsWhichCanCapture.clear();
+
+    if(canCapture(pawns, myPawns, enemyPawns))
     {
-        if(pawnsWhichCanCapture[0].getSprite().getPosition() == it->getSprite().getPosition())
-            index = i;
+        selectPawn(pawns, enemyPawns);
+        canCapture(pawns, myPawns, enemyPawns);
+        capture(pawns, enemyPawns);
     }
-    if((where = canCapture(pawnsWhichCanCapture[0], validFieldsIfCanCapture) != 0))
-    {
-        if(where == 1)
-        {
-            x = pawnsWhichCanCapture[0].getSprite().getPosition().x - 2 * FIELD_SIZE;
-            y = pawnsWhichCanCapture[0].getSprite().getPosition().y - 2 * FIELD_SIZE;
-        }
-        else if(where == 2)
-        {
-            x = pawnsWhichCanCapture[0].getSprite().getPosition().x + 2 * FIELD_SIZE;
-            y = pawnsWhichCanCapture[0].getSprite().getPosition().y - 2 * FIELD_SIZE;
-        }
-        else if(where == 3)
-        {
-            x = pawnsWhichCanCapture[0].getSprite().getPosition().x - 2 * FIELD_SIZE;
-            y = pawnsWhichCanCapture[0].getSprite().getPosition().y + 2 * FIELD_SIZE;
-        }
-        else if(where == 4)
-        {
-            x = pawnsWhichCanCapture[0].getSprite().getPosition().x + 2 * FIELD_SIZE;
-            y = pawnsWhichCanCapture[0].getSprite().getPosition().y + 2 * FIELD_SIZE;
-        }
-
-        pawnsWhichCanCapture[0].getSprite().setPosition(x, y);
-    }
-
-    sf::Vector2i capturedPawn;
-    capturedPawn.x =
-    (pawnsWhichCanCapture[0].getSprite().getPosition().x + pawns[index].getSprite().getPosition().x) / 2;
-    capturedPawn.y =
-    (pawnsWhichCanCapture[0].getSprite().getPosition().y + pawns[index].getSprite().getPosition().y) / 2;
-
-    pawns[index].getSprite().setPosition(pawnsWhichCanCapture[0].getSprite().getPosition().x,
-                                         pawnsWhichCanCapture[0].getSprite().getPosition().y);
-
-    return capturedPawn;
 }
 
-int Computer::canCapture(Pawn pawn, std::vector<sf::Vector2i> validFieldsIfCanCapture)
+void Computer::capture(std::vector<std::shared_ptr<Pawn>> &pawns, std::vector<std::shared_ptr<Pawn>> &enemyPawns)
 {
-    int newx = pawn.getSprite().getPosition().x;
-    int newy = pawn.getSprite().getPosition().y;
-    for(auto it = validFieldsIfCanCapture.begin(); it != validFieldsIfCanCapture.end(); it++)
+    int where = 0;
+    while((where = canCapture(pawns, enemyPawns, *lastSelectedPawn, true)) != 0)
     {
-        if(it->x == newx - 2 * FIELD_SIZE and it->y == newy - 2 * FIELD_SIZE)
-            return 1;
-        if(it->x == newx + 2 * FIELD_SIZE and it->y == newy - 2 * FIELD_SIZE)
-            return 2;
-        if(it->x == newx - 2 * FIELD_SIZE and it->y == newy + 2 * FIELD_SIZE)
-            return 3;
-        if(it->x == newx + 2 * FIELD_SIZE and it->y == newy + 2 * FIELD_SIZE)
-            return 4;
+        if(where == 1 and isFieldValid(lastSelectedPawn->getSprite().getPosition().x - 2 * FIELD_SIZE,
+                                       lastSelectedPawn->getSprite().getPosition().y - 2 * FIELD_SIZE)) // upleft
+        {
+            removeCapturedPawn(enemyPawns, lastSelectedPawn->getSprite().getPosition().x - 2 * FIELD_SIZE,
+                               lastSelectedPawn->getSprite().getPosition().y - 2 * FIELD_SIZE);
+            removeCapturedPawn(pawns, lastSelectedPawn->getSprite().getPosition().x - 2 * FIELD_SIZE,
+                               lastSelectedPawn->getSprite().getPosition().y - 2 * FIELD_SIZE);
+            lastSelectedPawn->getSprite().setPosition(lastSelectedPawn->getSprite().getPosition().x - 2 * FIELD_SIZE,
+                                                      lastSelectedPawn->getSprite().getPosition().y - 2 * FIELD_SIZE);
+        }
+        else if(where == 2 and isFieldValid(lastSelectedPawn->getSprite().getPosition().x + 2 * FIELD_SIZE,
+                                            lastSelectedPawn->getSprite().getPosition().y - 2 * FIELD_SIZE)) // upright
+        {
+            removeCapturedPawn(enemyPawns, lastSelectedPawn->getSprite().getPosition().x + 2 * FIELD_SIZE,
+                               lastSelectedPawn->getSprite().getPosition().y - 2 * FIELD_SIZE);
+            removeCapturedPawn(pawns, lastSelectedPawn->getSprite().getPosition().x + 2 * FIELD_SIZE,
+                               lastSelectedPawn->getSprite().getPosition().y - 2 * FIELD_SIZE);
+            lastSelectedPawn->getSprite().setPosition(lastSelectedPawn->getSprite().getPosition().x + 2 * FIELD_SIZE,
+                                                      lastSelectedPawn->getSprite().getPosition().y - 2 * FIELD_SIZE);
+        }
+        else if(where == 3 and isFieldValid(lastSelectedPawn->getSprite().getPosition().x - 2 * FIELD_SIZE,
+                                            lastSelectedPawn->getSprite().getPosition().y + 2 * FIELD_SIZE)) // downleft
+        {
+            removeCapturedPawn(enemyPawns, lastSelectedPawn->getSprite().getPosition().x - 2 * FIELD_SIZE,
+                               lastSelectedPawn->getSprite().getPosition().y + 2 * FIELD_SIZE);
+            removeCapturedPawn(pawns, lastSelectedPawn->getSprite().getPosition().x - 2 * FIELD_SIZE,
+                               lastSelectedPawn->getSprite().getPosition().y + 2 * FIELD_SIZE);
+            lastSelectedPawn->getSprite().setPosition(lastSelectedPawn->getSprite().getPosition().x - 2 * FIELD_SIZE,
+                                                      lastSelectedPawn->getSprite().getPosition().y + 2 * FIELD_SIZE);
+        }
+        else if(where == 4 and isFieldValid(lastSelectedPawn->getSprite().getPosition().x + 2 * FIELD_SIZE,
+                                            lastSelectedPawn->getSprite().getPosition().y + 2 * FIELD_SIZE)) // downright
+        {
+            removeCapturedPawn(enemyPawns, lastSelectedPawn->getSprite().getPosition().x + 2 * FIELD_SIZE,
+                               lastSelectedPawn->getSprite().getPosition().y + 2 * FIELD_SIZE);
+            removeCapturedPawn(pawns, lastSelectedPawn->getSprite().getPosition().x + 2 * FIELD_SIZE,
+                               lastSelectedPawn->getSprite().getPosition().y + 2 * FIELD_SIZE);
+            lastSelectedPawn->getSprite().setPosition(lastSelectedPawn->getSprite().getPosition().x + 2 * FIELD_SIZE,
+                                                      lastSelectedPawn->getSprite().getPosition().y + 2 * FIELD_SIZE);
+        }
     }
+}
 
-    return 0;
+void Computer::removeCapturedPawn(std::vector<std::shared_ptr<Pawn>> &pawns, int offx, int offy)
+{
+    int x = lastSelectedPawn->getSprite().getPosition().x + offx;
+    int y = lastSelectedPawn->getSprite().getPosition().y + offy;
+    x /= 2;
+    y /= 2;
+
+    for(auto it = pawns.begin(); it != pawns.end(); it++)
+        if(it->get()->getSprite().getPosition().x == x and it->get()->getSprite().getPosition().y == y)
+        {
+            pawns.erase(it);
+        }
 }
 
 void Computer::move(std::vector<Pawn> &pawns)
@@ -330,6 +337,15 @@ bool Computer::isFieldFree(std::vector<Pawn> pawns, int x, int y)
     return true;
 }
 
+bool Computer::isFieldFree(std::vector<std::shared_ptr<Pawn>> pawns, sf::Vector2i pos)
+{
+    for(auto it = pawns.begin(); it != pawns.end(); it++)
+        if(pos.x == (*it)->getSprite().getPosition().x and pos.y == (*it)->getSprite().getPosition().y)
+            return false;
+
+    return true;
+}
+
 bool Computer::isFieldValid(int x, int y)
 {
     for(auto it = validFields.begin(); it != validFields.end(); it++)
@@ -456,4 +472,202 @@ int Computer::findMin(Node *node)
         }
 
     return min;
+}
+
+bool Computer::canCapture(std::vector<std::shared_ptr<Pawn>> pawns, int newx, int newy, int where)
+{
+    sf::Vector2i field;
+    bool ret = true;
+    if(where == 1) // upleft
+    {
+        field.x = newx - FIELD_SIZE;
+        field.y = newy - FIELD_SIZE;
+        ret     = isFieldFree(pawns, field);
+    }
+    else if(where == 2) // upright
+    {
+        field.x = newx + FIELD_SIZE;
+        field.y = newy - FIELD_SIZE;
+        ret     = isFieldFree(pawns, field);
+    }
+    else if(where == 3) // downleft
+    {
+        field.x = newx - FIELD_SIZE;
+        field.y = newy + FIELD_SIZE;
+        ret     = isFieldFree(pawns, field);
+    }
+    else if(where == 4) // downright
+    {
+        field.x = newx + FIELD_SIZE;
+        field.y = newy + FIELD_SIZE;
+        ret     = isFieldFree(pawns, field);
+    }
+
+    if(!isFieldValid(field.x, field.y))
+        return false;
+    validFieldsIfCanCapture.push_back(field);
+    return ret;
+}
+
+int Computer::canCapture(Pawn aPawn, Pawn uPawn)
+{
+    if(aPawn.getSprite().getPosition().x - FIELD_SIZE == uPawn.getSprite().getPosition().x and
+       aPawn.getSprite().getPosition().y - FIELD_SIZE == uPawn.getSprite().getPosition().y)
+        return 1; // upleft
+    if(aPawn.getSprite().getPosition().x + FIELD_SIZE == uPawn.getSprite().getPosition().x and
+       aPawn.getSprite().getPosition().y - FIELD_SIZE == uPawn.getSprite().getPosition().y)
+        return 2; // upright
+    if(aPawn.getSprite().getPosition().x - FIELD_SIZE == uPawn.getSprite().getPosition().x and
+       aPawn.getSprite().getPosition().y + FIELD_SIZE == uPawn.getSprite().getPosition().y)
+        return 3; // downleft
+    if(aPawn.getSprite().getPosition().x + FIELD_SIZE == uPawn.getSprite().getPosition().x and
+       aPawn.getSprite().getPosition().y + FIELD_SIZE == uPawn.getSprite().getPosition().y)
+        return 4; // downright
+
+    return 0;
+}
+
+int Computer::canCapture(int x, int y, Pawn uPawn)
+{
+    if(x - FIELD_SIZE == uPawn.getSprite().getPosition().x and
+       y - FIELD_SIZE == uPawn.getSprite().getPosition().y)
+        return 1; // upleft
+    if(x + FIELD_SIZE == uPawn.getSprite().getPosition().x and
+       y - FIELD_SIZE == uPawn.getSprite().getPosition().y)
+        return 2; // upright
+    if(x - FIELD_SIZE == uPawn.getSprite().getPosition().x and
+       y + FIELD_SIZE == uPawn.getSprite().getPosition().y)
+        return 3; // downleft
+    if(x + FIELD_SIZE == uPawn.getSprite().getPosition().x and
+       y + FIELD_SIZE == uPawn.getSprite().getPosition().y)
+        return 4; // downright
+
+    return 0;
+}
+
+bool Computer::canCapture(std::vector<std::shared_ptr<Pawn>> pawns,
+                          std::vector<std::shared_ptr<Pawn>> enemyPawns,
+                          Pawn pawn)
+{
+    int where = 0;
+    bool ret  = false;
+    for(auto it = enemyPawns.begin(); it != enemyPawns.end(); it++)
+        if((where = canCapture(pawn, *it->get())) and
+           canCapture(pawns, it->get()->getSprite().getPosition().x,
+                      it->get()->getSprite().getPosition().y, where))
+            ret = true;
+
+    return ret;
+}
+
+int Computer::canCapture(std::vector<std::shared_ptr<Pawn>> pawns,
+                         std::vector<std::shared_ptr<Pawn>> enemyPawns,
+                         Pawn pawn,
+                         bool ovr)
+{
+    int where = 0;
+    for(auto it = enemyPawns.begin(); it != enemyPawns.end(); it++)
+    {
+        if((where = canCapture(pawn, *it->get())) and
+           canCapture(pawns, it->get()->getSprite().getPosition().x,
+                      it->get()->getSprite().getPosition().y, where))
+            return where;
+    }
+
+    return where;
+}
+
+bool Computer::canCapture(std::vector<std::shared_ptr<Pawn>> pawns,
+                          std::vector<std::shared_ptr<Pawn>> enemyPawns,
+                          int x,
+                          int y)
+{
+    int where = 0;
+    bool ret  = false;
+    for(auto it = enemyPawns.begin(); it != enemyPawns.end(); it++)
+        if((where = canCapture(x, y, *it->get())) and canCapture(pawns, x, y, where))
+            ret = true;
+
+    return ret;
+}
+
+bool Computer::canCapture(std::vector<std::shared_ptr<Pawn>> pawns,
+                          std::vector<std::shared_ptr<Pawn>> myPawns,
+                          std::vector<std::shared_ptr<Pawn>> enemyPawns)
+{
+    validFieldsIfCanCapture.clear();
+    bool ret = false;
+    for(auto it = myPawns.begin(); it != myPawns.end(); it++)
+        if(canCapture(pawns, enemyPawns, *it->get()))
+        {
+            pawnsWhichCanCapture.push_back(*it);
+            ret = true;
+        }
+
+    return ret;
+}
+
+void Computer::selectPawn(std::vector<std::shared_ptr<Pawn>> pawns, std::vector<std::shared_ptr<Pawn>> enemyPawns)
+{
+    int max          = countCaptures(pawns, enemyPawns, pawnsWhichCanCapture[0], 0, 0);
+    lastSelectedPawn = pawnsWhichCanCapture[0];
+    if(pawnsWhichCanCapture.size() > 1)
+    {
+        for(auto it = pawnsWhichCanCapture.begin(); it != pawnsWhichCanCapture.end(); it++)
+        {
+            int tmp = countCaptures(pawns, enemyPawns, *it, 0, 0);
+            if(tmp > max)
+            {
+                max              = tmp;
+                lastSelectedPawn = *it;
+            }
+        }
+    }
+}
+
+int Computer::countCaptures(std::vector<std::shared_ptr<Pawn>> pawns,
+                            std::vector<std::shared_ptr<Pawn>> enemyPawns,
+                            std::shared_ptr<Pawn> pawn,
+                            int offx,
+                            int offy)
+{
+    int x = pawn->getSprite().getPosition().x + offx;
+    int y = pawn->getSprite().getPosition().y + offy;
+    for(int i = 0; i < validFieldsIfCanCapture.size(); i++)
+    {
+        if(validFieldsIfCanCapture[i].x == x - 2 * FIELD_SIZE and validFieldsIfCanCapture[i].y == y - 2 * FIELD_SIZE)
+        {
+            validFieldsIfCanCapture.clear();
+            canCapture(pawns, enemyPawns, x, y);
+            return countCaptures(pawns, enemyPawns, pawn, FIELD_SIZE * -2, FIELD_SIZE * -2) + 1;
+        }
+        else if(validFieldsIfCanCapture[i].x == x + 2 * FIELD_SIZE and
+                validFieldsIfCanCapture[i].y == y - 2 * FIELD_SIZE)
+        {
+            validFieldsIfCanCapture.clear();
+            canCapture(pawns, enemyPawns, x, y);
+            return countCaptures(pawns, enemyPawns, pawn, FIELD_SIZE * 2, FIELD_SIZE * -2) + 1;
+        }
+        else if(validFieldsIfCanCapture[i].x == x - 2 * FIELD_SIZE and
+                validFieldsIfCanCapture[i].y == y + 2 * FIELD_SIZE)
+        {
+            validFieldsIfCanCapture.clear();
+            canCapture(pawns, enemyPawns, x, y);
+            return countCaptures(pawns, enemyPawns, pawn, FIELD_SIZE * -2, FIELD_SIZE * 2) + 1;
+        }
+        else if(validFieldsIfCanCapture[i].x == x + 2 * FIELD_SIZE and
+                validFieldsIfCanCapture[i].y == y + 2 * FIELD_SIZE)
+        {
+            validFieldsIfCanCapture.clear();
+            canCapture(pawns, enemyPawns, x, y);
+            return countCaptures(pawns, enemyPawns, pawn, FIELD_SIZE * 2, FIELD_SIZE * 2) + 1;
+        }
+        else
+        {
+            validFieldsIfCanCapture.clear();
+            for(auto it = pawnsWhichCanCapture.begin(); it != pawnsWhichCanCapture.end(); it++)
+                canCapture(pawns, enemyPawns, *it->get());
+            return 0;
+        }
+    }
 }
