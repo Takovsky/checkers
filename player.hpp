@@ -33,7 +33,11 @@ public:
     Player() = default;
     virtual ~Player() {}
     virtual void move(std::vector<Pawn> &pawns) {}
-    virtual void capture(std::vector<Pawn> &pawns) {}
+    virtual sf::Vector2i capture(std::vector<Pawn> &pawns,
+                         std::vector<Pawn> &pawnsWhichCanCapture,
+                         std::vector<sf::Vector2i> &validFieldsIfCanCapture)
+    {
+    }
     void pushPawn(std::shared_ptr<Pawn> pawn) { pawns.push_back(pawn); }
     std::shared_ptr<Pawn> choosenPawn();
     bool isPawnClicked(int x, int y);

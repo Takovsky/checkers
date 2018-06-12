@@ -20,13 +20,18 @@ class Computer : public Player
     Node *findMove(Node *node);
     int findMax(Node *node);
     int findMin(Node *node);
+    int canBlackPawnCapture(std::vector<Pawn> pawns, Pawn pawn);
+    void findMyNextCapture(Tree &tree, Node *_root, std::vector<Pawn> pawns, Pawn pawn);
+    int canCapture(Pawn pawn, std::vector<sf::Vector2i> validFieldsIfCanCapture);
 
 public:
     Computer() = default;
     Computer(std::vector<sf::Vector2i> validFields) : validFields(validFields) { _isWhite = false; }
     ~Computer() {}
     void move(std::vector<Pawn> &pawns);
-    void capture(std::vector<Pawn> &pawns);
+    sf::Vector2i capture(std::vector<Pawn> &pawns,
+                 std::vector<Pawn> &pawnsWhichCanCapture,
+                 std::vector<sf::Vector2i> &validFieldsIfCanCapture);
 };
 
 #endif // COMPUTER_HPP

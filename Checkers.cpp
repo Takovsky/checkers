@@ -98,10 +98,15 @@ void Checkers::play()
         if(!strcmp(typeid(*players[activePlayer]).name(), "8Computer"))
         {
             std::vector<Pawn> pawnsCopy;
+            std::vector<Pawn> capturingPawnsCopy;
+            sf::Vector2i capturedPawn;
             for(auto it = pawns.begin(); it != pawns.end(); it++)
                 pawnsCopy.push_back(*it->get());
+            for(auto it = pawnsWhichCanCapture.begin(); it != pawnsWhichCanCapture.end(); it++)
+                capturingPawnsCopy.push_back(*it->get());
             if(capturing)
-                players[activePlayer]->capture(pawnsCopy);
+                capturedPawn =
+                players[activePlayer]->capture(pawnsCopy, capturingPawnsCopy, validFieldsIfCanCapture);
             else
                 players[activePlayer]->move(pawnsCopy);
             for(int i = 0; i < pawns.size(); i++)
@@ -116,6 +121,8 @@ void Checkers::play()
                     selectField(*lastSelectedPawn);
                 }
             }
+            if(capturing)
+                removeCapturedPawn(capturedPawn);
             changeActivePlayer();
             isNewMove = true;
             capturing = false;
@@ -202,6 +209,20 @@ void Checkers::addPointAndRemovePawn(int x, int y, bool isWhite)
             pawns.erase(it);
             return;
         }
+}
+
+void Checkers::removeCapturedPawn(sf::Vector2i vec)
+{
+    players[unactivePlayer]->popPawn(vec.x, vec.y);
+    for(auto it = pawns.begin(); it != pawns.end(); it++)
+    {
+        if(it->get()->getSprite().getPosition().x == vec.x and
+           it->get()->getSprite().getPosition().y == vec.y)
+        {
+            pawns.erase(it);
+            return;
+        }
+    }
 }
 
 void Checkers::removeCapturedPawn()
@@ -400,6 +421,7 @@ bool Checkers::canCapture(Pawn pawn)
 
 bool Checkers::canCapture()
 {
+    validFieldsIfCanCapture.clear();
     bool ret = false;
     for(auto it = players[activePlayer]->pawns.begin(); it != players[activePlayer]->pawns.end(); it++)
         if(canCapture(*it->get()))

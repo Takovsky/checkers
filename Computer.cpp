@@ -2,10 +2,74 @@
 #include "Board.hpp"
 #include "Tree.hpp"
 
-void Computer::capture(std::vector<Pawn> &pawns)
+sf::Vector2i Computer::capture(std::vector<Pawn> &pawns,
+                               std::vector<Pawn> &pawnsWhichCanCapture,
+                               std::vector<sf::Vector2i> &validFieldsIfCanCapture)
 {
-    std::vector<Pawn> validPawnsToCapture;
+    int where = 0;
+    int x, y;
+    int index;
+    int i = 0;
+    for(auto it = pawns.begin(); it != pawns.end(); it++, i++)
+    {
+        if(pawnsWhichCanCapture[0].getSprite().getPosition() == it->getSprite().getPosition())
+            index = i;
+    }
+    if((where = canCapture(pawnsWhichCanCapture[0], validFieldsIfCanCapture) != 0))
+    {
+        if(where == 1)
+        {
+            x = pawnsWhichCanCapture[0].getSprite().getPosition().x - 2 * FIELD_SIZE;
+            y = pawnsWhichCanCapture[0].getSprite().getPosition().y - 2 * FIELD_SIZE;
+        }
+        else if(where == 2)
+        {
+            x = pawnsWhichCanCapture[0].getSprite().getPosition().x + 2 * FIELD_SIZE;
+            y = pawnsWhichCanCapture[0].getSprite().getPosition().y - 2 * FIELD_SIZE;
+        }
+        else if(where == 3)
+        {
+            x = pawnsWhichCanCapture[0].getSprite().getPosition().x - 2 * FIELD_SIZE;
+            y = pawnsWhichCanCapture[0].getSprite().getPosition().y + 2 * FIELD_SIZE;
+        }
+        else if(where == 4)
+        {
+            x = pawnsWhichCanCapture[0].getSprite().getPosition().x + 2 * FIELD_SIZE;
+            y = pawnsWhichCanCapture[0].getSprite().getPosition().y + 2 * FIELD_SIZE;
+        }
 
+        pawnsWhichCanCapture[0].getSprite().setPosition(x, y);
+    }
+
+    sf::Vector2i capturedPawn;
+    capturedPawn.x =
+    (pawnsWhichCanCapture[0].getSprite().getPosition().x + pawns[index].getSprite().getPosition().x) / 2;
+    capturedPawn.y =
+    (pawnsWhichCanCapture[0].getSprite().getPosition().y + pawns[index].getSprite().getPosition().y) / 2;
+
+    pawns[index].getSprite().setPosition(pawnsWhichCanCapture[0].getSprite().getPosition().x,
+                                         pawnsWhichCanCapture[0].getSprite().getPosition().y);
+
+    return capturedPawn;
+}
+
+int Computer::canCapture(Pawn pawn, std::vector<sf::Vector2i> validFieldsIfCanCapture)
+{
+    int newx = pawn.getSprite().getPosition().x;
+    int newy = pawn.getSprite().getPosition().y;
+    for(auto it = validFieldsIfCanCapture.begin(); it != validFieldsIfCanCapture.end(); it++)
+    {
+        if(it->x == newx - 2 * FIELD_SIZE and it->y == newy - 2 * FIELD_SIZE)
+            return 1;
+        if(it->x == newx + 2 * FIELD_SIZE and it->y == newy - 2 * FIELD_SIZE)
+            return 2;
+        if(it->x == newx - 2 * FIELD_SIZE and it->y == newy + 2 * FIELD_SIZE)
+            return 3;
+        if(it->x == newx + 2 * FIELD_SIZE and it->y == newy + 2 * FIELD_SIZE)
+            return 4;
+    }
+
+    return 0;
 }
 
 void Computer::move(std::vector<Pawn> &pawns)
@@ -72,6 +136,47 @@ void Computer::move(std::vector<Pawn> &pawns)
     pawns.clear();
     for(auto it = tmpNode->pawns.begin(); it != tmpNode->pawns.end(); it++)
         pawns.push_back(*it);
+}
+
+void Computer::findMyNextCapture(Tree &tree, Node *_root, std::vector<Pawn> pawns, Pawn pawn)
+{
+    bool canCapture = canBlackPawnCapture(pawns, pawn);
+    for(auto it = pawns.begin(); it != pawns.end(); it++)
+    {
+        if(pawn.getSprite().getPosition() == it->getSprite().getPosition())
+        {
+            if(canCapture == 1)
+            {
+                it->getSprite().setPosition(it->getSprite().getPosition().x - 2 * FIELD_SIZE,
+                                            it->getSprite().getPosition().y - 2 * FIELD_SIZE);
+                tree.pushNewMove(_root, pawns, true);
+                it->getSprite().setPosition(it->getSprite().getPosition().x + 2 * FIELD_SIZE,
+                                            it->getSprite().getPosition().y + 2 * FIELD_SIZE);
+            }
+            else if(canCapture == 2)
+            {
+                it->getSprite().setPosition(it->getSprite().getPosition().x + 2 * FIELD_SIZE,
+                                            it->getSprite().getPosition().y - 2 * FIELD_SIZE);
+                tree.pushNewMove(_root, pawns, true);
+                it->getSprite().setPosition(it->getSprite().getPosition().x - 2 * FIELD_SIZE,
+                                            it->getSprite().getPosition().y + 2 * FIELD_SIZE);
+            }
+            else if(canCapture == 3)
+            {
+                it->getSprite().setPosition(it->getSprite().getPosition().x - 2 * FIELD_SIZE,
+                                            it->getSprite().getPosition().y - 2 * FIELD_SIZE);
+                tree.pushNewMove(_root, pawns, true);
+                it->getSprite().setPosition(it->getSprite().getPosition().x + 2 * FIELD_SIZE,
+                                            it->getSprite().getPosition().y + 2 * FIELD_SIZE);
+                it->getSprite().setPosition(it->getSprite().getPosition().x + 2 * FIELD_SIZE,
+                                            it->getSprite().getPosition().y - 2 * FIELD_SIZE);
+                tree.pushNewMove(_root, pawns, true);
+                it->getSprite().setPosition(it->getSprite().getPosition().x - 2 * FIELD_SIZE,
+                                            it->getSprite().getPosition().y + 2 * FIELD_SIZE);
+            }
+            break;
+        }
+    }
 }
 
 void Computer::findEnemyNextMove(Tree &tree, Node *_root, std::vector<Pawn> pawns, Pawn pawn)
@@ -154,6 +259,26 @@ void Computer::findMyNextMove(Tree &tree, Node *_root, std::vector<Pawn> pawns, 
             break;
         }
     }
+}
+
+int Computer::canBlackPawnCapture(std::vector<Pawn> pawns, Pawn pawn)
+{
+    int ret   = 0;
+    int x     = pawn.getSprite().getPosition().x;
+    int y     = pawn.getSprite().getPosition().y;
+    bool left = isFieldFree(pawns, x - 2 * FIELD_SIZE, y - 2 * FIELD_SIZE) and
+                isFieldValid(x - 2 * FIELD_SIZE, y - 2 * FIELD_SIZE);
+    bool right = isFieldFree(pawns, x + 2 * FIELD_SIZE, y - 2 * FIELD_SIZE) and
+                 isFieldValid(x + 2 * FIELD_SIZE, y - 2 * FIELD_SIZE);
+
+    if(left and !right)
+        return 1;
+    if(!left and right)
+        return 2;
+    if(left and right)
+        return 3;
+
+    return 0;
 }
 
 int Computer::canWhitePawnMove(std::vector<Pawn> pawns, Pawn pawn)

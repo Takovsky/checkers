@@ -63,6 +63,7 @@ class Checkers
     void removeCapturedPawn();
     void checkIfAnyPawnAtEndOfBoard();
     void addPointAndRemovePawn(int x, int y, bool isWhite);
+    void removeCapturedPawn(sf::Vector2i vec);
 
 public:
     Checkers(sf::RenderWindow &window) : window(window), whitePoints(0), blackPoints(0) {}
